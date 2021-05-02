@@ -1,0 +1,20 @@
+| > !throwback.!Run
+|
+| Throwback - A DDEUtils throwback mechansim demo
+|
+set Throwback$Dir <Obey$Dir>
+set Throwback$Path <Throwback$Dir>
+
+IconSprites <Obey$Dir>.!Sprites
+
+|
+if "<System$Path>" = "" then Error 0 System resources cannot be found
+|
+RMEnsure SharedCLibrary 3.71 RMLoad System:Modules.Clib
+RMEnsure SharedCLibrary 3.71 Error, you need Clib 3.71 or later
+RMEnsure ColourTrans 0.52 RMLoad System:Modules.Colours
+RMEnsure ColourTrans 0.52 Error, you need ColourTrans 0.52 or later
+RMensure DDEUtils 1.51 System:Modules.DDEUtils
+RMensure DDEUtils 1.75 Error, you need DDEUtils 1.75 or later
+WimpSlot -min 96K -max 96K 
+run <Throwback$Dir>.application

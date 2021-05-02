@@ -1,0 +1,53 @@
+/*******************************************************************************
+
+File        : h.DDEUtils
+
+Date        : Saturday 1st May 2021
+
+Author      : Gavin Cawley
+
+Description : Library for implementing throwback using the DDEUtils module.
+
+History     : 26/04/2021 - v0.01
+              01/05/2021 - v0.10 added support for ErrorDetails and InfoDetails
+
+*******************************************************************************/
+   
+#include "wimp.h"
+
+// SWI numbers relating to the DDEUtils module
+
+#define DDEUtils_ThrowbackRegister   0x42585
+#define DDEUtils_ThrowbackUnRegister 0x42586
+
+// message IDs relating to the DDEUtils module
+
+#define DDEUtils_ThrowbackStart      0x42580
+#define DDEUtils_ProcessingFile      0x42581
+#define DDEUtils_ErrorsIn            0x42582
+#define DDEUtils_ErrorDetails        0x42583
+#define DDEUtils_ThrowbackEnd        0x42584
+#define DDEUtils_InfoForFile         0x42585
+#define DDEUtils_InfoDetails         0x42586
+
+typedef struct DDEUtilsMessagecStruct
+{               
+   wimp_msghdr header;
+
+   union
+   {
+      char filename[228];
+
+      struct
+      {
+         int line, severity;
+
+         char message[220];
+      }
+      details;
+   }
+   data;
+}
+DDEUtilsMessage;
+
+/******************************************************************************/ 

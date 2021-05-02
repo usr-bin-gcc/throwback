@@ -1,0 +1,352 @@
+/*******************************************************************************
+
+File        : c.main
+
+Date        : Sunday 25th April 2021
+
+Author      : Gavin Cawley
+
+Description : Program to demonstrate the DDEUtils throwback mechanism
+
+History     : 25/02/2021 - v0.01
+              01/05/2021 - v0.10 added support for ErrorDetails and InfoDetails
+                                 messages and clear button
+
+*******************************************************************************/
+
+#include <stdlib.h>
+#include <stdio.h>
+                 
+#include "bbc.h"
+#include "wimp.h"
+#include "wimpt.h"
+#include "resspr.h"
+#include "baricon.h"
+#include "res.h"
+#include "event.h"
+#include "menu.h"
+#include "dbox.h"
+#include "werr.h"
+#include "win.h"
+#include "template.h"
+#include "font.h"
+#include "colourtran.h"
+#include "os.h"
+
+#include "textpane.h"
+#include "DDEUtils.h"
+   
+#define APP_NAME "Throwback"
+#define MENU_ITEMS ">Info,Quit"
+                    
+#define IMENU_INFO 1
+#define IMENU_QUIT 2
+
+menu imenu;
+wimp_i selected = 0;
+
+wimp_w gui_handle;
+
+TextPane *textPane;
+
+void gui_mouse_click_handler(wimp_mousestr *ms, wimp_bbits mbits)
+{     
+   if (ms->i == 0)
+   {
+      textPane_clear(textPane);
+   }
+}
+
+void gui_open(wimp_openstr *openstr)
+{  
+   // open the dialog box at the appropriate level
+
+   wimpt_noerr(wimp_open_wind(openstr));         
+
+   // open the pane at that level                       
+   
+   wimp_wstate p_state;
+
+   if (wimpt_complain(wimp_get_wind_state(textPane->handle, &p_state)) == 0)
+   {
+      p_state.o.behind = openstr->behind;     
+
+      // place the pane relatve to the visible area of the dialog box
+                                              
+      p_state.o.box.x0 = openstr->box.x0 + 48;
+      p_state.o.box.y0 = openstr->box.y1 - 48 - 580;
+      p_state.o.box.x1 = openstr->box.x0 + 1440 - 48 - 48 + 8;
+      p_state.o.box.y1 = openstr->box.y1 - 48;       
+       
+      wimpt_noerr(wimp_open_wind(&p_state.o));
+   }
+            
+   // re-open dialog box undeneath the pane
+                                        
+   openstr->behind = textPane->handle;
+   wimpt_noerr(wimp_open_wind(openstr));
+}
+
+BOOL throwbackEventProcessor(wimp_eventstr *e, void *handle)
+{
+   if (e->e == wimp_ESEND || e->e == wimp_ESENDWANTACK)
+   {      
+      DDEUtilsMessage *message = (DDEUtilsMessage*)&e->data.msg;
+      
+      char buffer[4096];
+
+      switch (message->header.action)
+      {                         
+         case DDEUtils_ThrowbackStart:
+         {
+            textPane_addLine(textPane, "DDEUtils_ThrowbackStart received");
+
+            return TRUE;
+         }
+         case DDEUtils_ProcessingFile:
+         {
+            textPane_addLine(textPane, "DDEUtils_ProcessingFile received:");
+            sprintf(buffer, "   filename = %s", message->data.filename);
+            textPane_addLine(textPane, buffer);           
+
+        
+            return TRUE;
+         }
+         case DDEUtils_ErrorsIn:
+         {
+            textPane_addLine(textPane, "DDEUtils_ErrorsIn received:");
+            sprintf(buffer, "   filename = %s", message->data.filename);
+            textPane_addLine(textPane, buffer);           
+
+            return TRUE;
+         }
+         case DDEUtils_ErrorDetails:
+         {
+            textPane_addLine(textPane, "DDEUtils_ErrorDetails received");
+
+            char *severity;
+
+            switch (message->data.details.severity)
+            {                                
+               case 0 : severity = "Warning";       break;
+               case 1 : severity = "Error";         break;
+               case 2 : severity = "Serious error"; break;
+               default: severity = "Unknown";
+            }
+
+            sprintf(buffer, "   %s: line %d - %s", severity, 
+               message->data.details.line, message->data.details.message);
+            textPane_addLine(textPane, buffer);   
+
+
+            return TRUE;
+         }
+         case DDEUtils_ThrowbackEnd:
+         {
+            textPane_addLine(textPane, "DDEUtils_ThrowbackEnd received");
+
+            return TRUE;
+         }
+         case DDEUtils_InfoForFile:
+         {
+            textPane_addLine(textPane, "DDEUtils_InfoForFile received");
+
+            return TRUE;
+         }
+         case DDEUtils_InfoDetails:
+         {
+            textPane_addLine(textPane, "DDEUtils_InfoFetails received");
+
+            sprintf(buffer, "   Info: line %d - %s",  message->data.details.line, 
+            message->data.details.message);
+            textPane_addLine(textPane, buffer);   
+
+            return TRUE;
+         }
+         default:
+         {
+            textPane_addLine(textPane, "unrecognised message received");
+
+            return FALSE;
+         }
+      }
+
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+void gui_eventHandler(wimp_eventstr *e, void *handle)
+{
+   switch(e->e)
+   {
+      case wimp_EOPEN:   // maximise or minimise window 
+      {
+         gui_open(&(e->data.o));
+         
+         break;
+      }
+      case wimp_ECLOSE:   // close window
+      {
+         wimpt_noerr(wimp_close_wind(e->data.o.w));
+         wimpt_noerr(wimp_close_wind(textPane->handle));
+      
+         break;
+      }
+      case wimp_EBUT:   // mouse button change
+      {                                      
+         gui_mouse_click_handler(&(e->data.but.m), e->data.but.b);
+
+         break;
+      }
+   }
+}
+           
+void gui_create(void)
+{                        
+   wimp_wind *window = template_syshandle("Window");
+
+   if (window == 0)
+   {
+      exit(EXIT_FAILURE);
+   }
+
+   if (wimpt_complain(wimp_create_wind(window, &gui_handle)) != 0)
+   {
+      exit(EXIT_FAILURE);
+   }
+
+   win_register_event_handler(gui_handle, gui_eventHandler, 0);
+
+}
+
+void gui_closeDown(void)
+{                       
+   os_regset regs;
+
+   regs.r[0] = wimpt_task();
+   regs.r[0] = gui_handle;
+
+   wimpt_complain(os_swix(DDEUtils_ThrowbackUnRegister, &regs));
+}
+
+static void info_about(void)
+{
+   dbox d = dbox_new("ProgInfo");
+
+   if (d != NULL)
+   {
+      dbox_show(d);        
+      dbox_fillin(d);       
+      dbox_dispose(&d);     
+   }
+}
+
+static menu ipremenuproc(void *handle)
+{
+   return imenu;
+}
+
+static void imenuproc(void *handle, char *hit)
+{
+   switch (hit[0])  
+   {                
+      case IMENU_INFO:
+      {
+         info_about();
+
+         break;
+      }
+      case IMENU_QUIT:
+      {         
+         gui_closeDown();
+
+         exit(EXIT_SUCCESS);
+      }
+   }
+}
+
+static void icon_left_click(wimp_i icon)
+{
+   wimp_wstate win_state;
+
+   wimpt_complain(wimp_get_wind_state(gui_handle, &win_state));
+
+   gui_open(&(win_state.o));
+}
+
+
+int main(void)
+{                 
+   static wimp_msgaction messages[] = 
+   { 
+      DDEUtils_ThrowbackStart,
+      DDEUtils_ProcessingFile,
+      DDEUtils_ErrorsIn,
+      DDEUtils_ErrorDetails,
+      DDEUtils_ThrowbackEnd,
+      DDEUtils_InfoForFile,
+      DDEUtils_InfoDetails,
+      wimp_MCLOSEDOWN
+   };
+
+   wimpt_messages(messages);
+
+   wimpt_init(APP_NAME);
+
+   res_init(APP_NAME);   
+
+   template_init();              
+
+   dbox_init();     
+
+   textPane = textPane_create("pane");
+   gui_create();
+
+   baricon("!throwback", (int)resspr_area(), icon_left_click);
+
+   imenu = menu_new(APP_NAME, MENU_ITEMS);
+                    
+   if (imenu == NULL)
+   {
+      return EXIT_FAILURE;
+   }
+
+   if (!event_attachmenumaker(win_ICONBAR, ipremenuproc, imenuproc, 0))
+   {
+      return EXIT_FAILURE;
+   }                    
+
+   // register icon menu and middle click handler 
+
+   if (!event_attachmenumaker(win_ICONBAR, ipremenuproc, imenuproc, 0))
+   {
+      return FALSE;
+   }
+
+   // try and register with DDEUtils
+
+   os_regset regs;
+
+   regs.r[0] = gui_handle; // wimpt_task();
+
+   wimpt_complain(os_swix(DDEUtils_ThrowbackRegister, &regs));
+
+   win_add_unknown_event_processor(throwbackEventProcessor, NULL);
+
+   // main even processing loop
+
+   while (TRUE) 
+   {
+      event_process();
+   }
+                    
+   gui_closeDown();
+
+   wimp_closedown();
+
+   return EXIT_SUCCESS;
+}
+
+/******************************************************************************/
