@@ -14,7 +14,7 @@ RMEnsure SharedCLibrary 3.71 RMLoad System:Modules.Clib
 RMEnsure SharedCLibrary 3.71 Error, you need Clib 3.71 or later
 RMEnsure ColourTrans 0.52 RMLoad System:Modules.Colours
 RMEnsure ColourTrans 0.52 Error, you need ColourTrans 0.52 or later
-RMensure DDEUtils 1.51 System:Modules.DDEUtils
-RMensure DDEUtils 1.75 Error, you need DDEUtils 1.75 or later
+RMensure DDEUtils 1.56 System:Modules.DDEUtils
+RMensure DDEUtils 1.56 Error, you need DDEUtils 1.56 or later
 WimpSlot -min 96K -max 96K 
 run <Throwback$Dir>.application
