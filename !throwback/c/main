@@ -229,6 +229,8 @@ void gui_closeDown(void)
    regs.r[0] = gui_handle;
 
    wimpt_complain(os_swix(DDEUtils_ThrowbackUnRegister, &regs));
+
+   textPane_destroy(textPane);
 }
 
 static void info_about(void)
