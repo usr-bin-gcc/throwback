@@ -312,6 +312,8 @@ void textPane_destroy(TextPane *tp)
      
    free(tp->line);
    free(tp);
+
+   font_lose(tp->font);
 }
 
 /*******************************************************************************
