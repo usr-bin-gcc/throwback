@@ -43,7 +43,6 @@ History     : 25/02/2021 - v0.01
 #define IMENU_QUIT 2
 
 menu imenu;
-wimp_i selected = 0;
 
 wimp_w gui_handle;
 
@@ -293,7 +292,7 @@ int main(void)
       wimp_MCLOSEDOWN
    };
 
-   wimpt_messages(messages);
+   //wimpt_messages(messages);
 
    wimpt_init(APP_NAME);
 
@@ -319,13 +318,6 @@ int main(void)
    {
       return EXIT_FAILURE;
    }                    
-
-   // register icon menu and middle click handler 
-
-   if (!event_attachmenumaker(win_ICONBAR, ipremenuproc, imenuproc, 0))
-   {
-      return FALSE;
-   }
 
    // try and register with DDEUtils
 
